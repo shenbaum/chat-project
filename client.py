@@ -5,7 +5,7 @@ from tkinter import *
 from datetime import datetime
 import tkinter.scrolledtext
 
-HOST, PORT = '192.168.1.41', 4242
+HOST, PORT = '192.168.1.41', 8820
 
 hostname = socket.gethostname()
 my_ip_address = socket.gethostbyname(hostname)
@@ -34,7 +34,7 @@ class create_socket():
             
          if chat_gui:
             message = message_entry.get()
-            data = f'{message},{username},{my_ip_address}'
+            data = f'{message}^{username}^{my_ip_address}'
             self.client_socket.send(data.encode('utf-8'))
 
     def receive(self):
@@ -43,7 +43,7 @@ class create_socket():
         while(self.running):
 
             data = self.client_socket.recv(1024).decode()
-            details = data.split(',')
+            details = data.split('^')
             if details[0] != '':
                 insert(column, details[0], details[1], details[2])
                 message_entry.delete(0, END)
