@@ -24,11 +24,14 @@ class create_socket():
 
         self.client_socket = socket.socket()
         self.client_socket.connect((HOST, PORT))
+        print('hey')
         self.running = True
 
         self.receive_thread = threading.Thread(target = self.receive)
+        self.main_screen_thread = threading.Thread(target = self.main_screen)
 
         self.receive_thread.start()
+        self.main_screen_thread.start()
 
     def write(self):
             
@@ -45,7 +48,7 @@ class create_socket():
             data = self.client_socket.recv(1024).decode()
             details = data.split('^')
             if details[0] != '':
-                insert(column, details[0], details[1], details[2])
+                self.insert(column, details[0], details[1], details[2])
                 message_entry.delete(0, END)
 
     def stop(self):
@@ -56,63 +59,60 @@ class create_socket():
     def close_server(self):
         self.client_socket.close()
 
-def main_screen():
-    global message_entry, table, chat_gui
+    def main_screen(self):
+        global message_entry, table, chat_gui
 
-    win = Tk()
-    win.geometry('700x400')
-    win.title('chat')
+        win = Tk()
+        win.geometry('700x400')
+        win.title('chat')
 
-    colour_1 = 'white'
-    colour_2 = 'grey'
+        colour_1 = 'white'
+        colour_2 = 'grey'
 
-    title = Label(win, text ='chat', font = "50")  
-    title.pack()
+        title = Label(win, text ='chat', font = "50")  
+        title.pack()
 
-    message_entry = Entry(win, width = 67, font = ('Arial 13'))
-    message_entry.place(x = 39, y = 270)
+        message_entry = Entry(win, width = 67, font = ('Arial 13'))
+        message_entry.place(x = 39, y = 270)
 
-    send_button = Button(win, background = colour_1, foreground = colour_2, activebackground = colour_2,
-                         activeforeground = colour_1, highlightthickness = 2, highlightbackground = colour_2,
-                         highlightcolor = 'white', width = 13, height = 1, border = 0, cursor = 'hand1',
-                         text = 'Send', font = ('Arial', 12, 'bold'), command = client_socket.write)
-    send_button.place(x = 266, y = 310)
+        send_button = Button(win, background = colour_1, foreground = colour_2, activebackground = colour_2,
+                            activeforeground = colour_1, highlightthickness = 2, highlightbackground = colour_2,
+                            highlightcolor = 'white', width = 13, height = 1, border = 0, cursor = 'hand1',
+                            text = 'Send', font = ('Arial', 12, 'bold'), command = self.write)
+        send_button.place(x = 266, y = 310)
 
-    table = ttk.Treeview(win)
-    table['columns'] = ('Username', 'IP', 'Time')
+        table = ttk.Treeview(win)
+        table['columns'] = ('Username', 'IP', 'Time')
 
-    table.column('#0', width = 360)
-    table.column('Username', anchor = W, width = 100)
-    table.column('IP', anchor = CENTER, width = 100)
-    table.column('Time', anchor = W, width = 45)
+        table.column('#0', width = 360)
+        table.column('Username', anchor = W, width = 100)
+        table.column('IP', anchor = CENTER, width = 100)
+        table.column('Time', anchor = W, width = 45)
 
-    table.heading('#0', text = 'Message', anchor = W)
-    table.heading('Username', text = 'Username', anchor = W)
-    table.heading('IP', text = 'IP', anchor = CENTER)
-    table.heading('Time', text = 'Time', anchor = W)
+        table.heading('#0', text = 'Message', anchor = W)
+        table.heading('Username', text = 'Username', anchor = W)
+        table.heading('IP', text = 'IP', anchor = CENTER)
+        table.heading('Time', text = 'Time', anchor = W)
 
-    table.pack()
+        table.pack()
 
-    scrollbar = Scrollbar(win)
-    scrollbar.pack(side = RIGHT, fill = Y)
+        scrollbar = Scrollbar(win)
+        scrollbar.pack(side = RIGHT, fill = Y)
 
-    chat_gui = True
+        chat_gui = True
 
-    win.mainloop()
+        win.mainloop()
 
-def insert(index, message, nickname, ip):
-    global column, table
+    def insert(self, index, message, nickname, ip):
+        global column, table
 
-    if nickname == username:
-        nickname = nickname + ' (you)'
+        if nickname == username:
+            nickname = nickname + ' (you)'
 
-    if message != '':
-        table.insert(parent = '', index = 'end', iid = index,
-            text = message, values = (nickname, ip, now.strftime('%H : %M')))
-        
-    column += 1
-
-chat_screen_thread = threading.Thread(target = main_screen)
-chat_screen_thread.start()
+        if message != '':
+            table.insert(parent = '', index = 'end', iid = index,
+                text = message, values = (nickname, ip, now.strftime('%H : %M')))
+            
+        column += 1
 
 client_socket = create_socket(HOST, PORT)
