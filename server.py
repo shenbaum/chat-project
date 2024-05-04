@@ -1,54 +1,39 @@
 import socket
 import threading
 
-can_skip = False
-(skipped_socket, skipped_address) = None, None
+HOST = socket.gethostname()
+PORT = 8820
 
 class create_socket():
 
     def __init__(self):
+
         self.server_socket = socket.socket()
-        self.clients_addresses = []
-
-    def accepting_user(self):
-
-        self.server_socket.bind(('0.0.0.0', 6969))
+        self.server_socket.bind((HOST, PORT))
         self.server_socket.listen()
-        print('Server is up and running')
 
-        (client_socket, client_address) = self.server_socket.accept()
-        self.clients_addresses.append((client_socket, client_address))
-        print('Client connected')
+        self.clients = []
 
-    def get_data(self):
-        global skipped_socket, skipped_address, can_skip
+    def broadcast(self, data):
+        for client in self.clients:
+            client.send(data.encode('utf-8'))
 
-        data = ''
-        for client in self.clients_addresses:
-            data = client[0].recv(1024).decode()
-            if data != '':
-                (skipped_socket, skipped_address) = client
-                can_skip = True
-                return data
-            
-    def send_data(self):
+    def receive(self):
 
-        data = str(self.get_data()).encode()
+        while(True):
 
-        if can_skip:
-            for client in self.clients_addresses:
-                if client != (skipped_socket, skipped_address):
-                    client[0].send(data)
+            self.client, self.address = self.server_socket.accept()
+            self.clients.append(self.client)
 
-    def close_server(self):
+            thread = threading.Thread(target = self.handle, args = (self.client,))
+            thread.start()
 
-        self.server_socket.close()
+    def handle(self, client):
+
+        while(True):
+            data = str(client.recv(1024).decode())
+            self.broadcast(data)
 
 server_socket = create_socket()
-thread = threading.Thread(target = server_socket.accepting_user)
-thread.start()
-
-run = True
-while(run):
-    server_socket.send_data()
-server_socket.close_server()
+print('server running...')
+server_socket.receive()
