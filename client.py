@@ -142,15 +142,16 @@ class create_client():
 
                     messages = data.strip('/recieve_last_five_messages ')
                     messages = messages.split('/separation/')
+                    messages.reverse()
 
                     text_widget.configure(state = 'normal')
 
-                    text_widget.insert(INSERT, f'The last five messages -\n')
+                    text_widget.insert(END, f'The last five messages -\n')
 
                     for message in messages:
-                        text_widget.insert(INSERT, f'{message}\n')
+                        text_widget.insert(END, f'{message}\n')
 
-                    text_widget.insert(INSERT, f'new messages -\n')
+                    text_widget.insert(END, f'new messages -\n')
 
                     text_widget.configure(state = 'disabled')
 
@@ -228,7 +229,6 @@ class create_client():
 
         for contact in self.my_contacts_list_and_dates:
             data = contact.split()
-            print(data)
             data[1] += '_'
             contacts_table.insert(parent = '', index = 'end', iid = self.my_contacts_list_and_dates.index(contact), text = data[0], values = data[1] + data[2][:-3])
 
@@ -268,15 +268,18 @@ class create_client():
                 text_widget.configure(state = "disabled")
 
                 # send button
-                send_button = create_button(root, 'Send', CTkFont, 30, 260, self.send_message, ())
+                send_button = create_button(root, 'Send', CTkFont, 30, 170, self.send_message, ())
                 send_button = send_button.putinfo()
-                send_button.place(x = 400, y = 360)
+                send_button.place(x = 380, y = 360)
+
+                # return button
+                send_button = create_button(root, 'Return', CTkFont, 30, 170, self.return_to_my_contacts_screen, ())
+                send_button = send_button.putinfo()
+                send_button.place(x = 570, y = 360)
 
                 # message entry box
                 msg_entry = CTkEntry(root, placeholder_text = 'Write a message..', width = 300, height = 44, text_color = colour_1, font = CTkFont(size = 16, weight = 'bold'))
                 msg_entry.place(x = 60, y = 360)
-
-                root.protocol('WM_DELETE_WINDOW', lambda: confirm_exit(root))
 
                 chat_is_on = True
 
@@ -308,7 +311,7 @@ class create_client():
 
         while(chat_is_on):
             self.client_socket.send(f'/recieve_message `{id}`{selected_contact}'.encode('utf-8'))
-            time.sleep(2)
+            time.sleep(3)
 
 #add new contact screen
 
@@ -411,12 +414,15 @@ class create_client():
                     if contact != nickname:
                         users_list.insert(END, contact)
 
+# return to main screen
+
     def return_to_my_contacts_screen(self):
-        global add_new_contact_gui
+        global add_new_contact_gui, chat_is_on
 
         root.destroy()
-        self.mycontacts_screen()
         add_new_contact_gui = False
+        chat_is_on = False
+        self.mycontacts_screen()
 
 #login
 
@@ -424,7 +430,6 @@ def login_screen(client_socket):
         global win, log_username_entry, log_password_entry
 
         win = CTk()
-        print(type(win))
         win.geometry("750x420+585+330")
         win.title('Login page')
         win.iconbitmap('loginlockrefreshincircularbutton_80241.ico')
@@ -656,18 +661,9 @@ def return_to_login(client_socket):
     login_screen(client_socket)
 
 
-
-def confirm_exit(win):
-    global chat_is_on
-
-    answer = askyesno(title = 'Exit', message = 'Are you sure you want to exit ?')
-    if answer:
-        win.destroy()
-        chat_is_on = False
-        client_socket.mycontacts_screen()
-
 def message_box(string, sign):
     msg = create_message(sign, string)
     msg.show()
+
 
 client_socket = create_client(HOST, PORT)
