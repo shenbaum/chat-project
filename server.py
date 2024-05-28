@@ -101,9 +101,11 @@ class create_socket():
                         )
                         users_data_base.commit()
 
-                        users_data_base_cursor.execute("SELECT user_id FROM users")
-                        for user_id in users_data_base_cursor:
-                            id = user_id[0]
+                        query = "SELECT user_id FROM users ORDER BY user_id DESC LIMIT 1"
+                        users_data_base_cursor.execute(query)
+
+                        id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                        id = id[0]
 
                         data = f'{check}`{id}'
                         self.client.send(data.encode('utf-8'))
@@ -125,19 +127,16 @@ class create_socket():
                 check ='false'
                 nickname = ''
                 id = ''
-                
-                try:
 
-                    users_data_base_cursor.execute("SELECT * FROM users")
-                    for user in users_data_base_cursor:
-                        if user[1] == info[0] and user[2] == password:
-                            check = 'true'
-                            nickname = user[3]
-                            id = user[0]
-                            break
+                query = f"SELECT * FROM users WHERE user_name = '{info[0]}' AND password = '{password}'"
+                users_data_base_cursor.execute(query)
                 
-                except:
-                    pass
+                row_count = users_data_base_cursor.rowcount
+                if row_count != 0:
+                    check = 'true'
+                    for user in users_data_base_cursor:
+                        nickname = user[3]
+                        id = user[0]
 
                 data = (f'{check}`{nickname}`{id}')
                 client.send(data.encode('utf-8'))
@@ -149,8 +148,10 @@ class create_socket():
                 id = int(data)
 
                 all_contacts = ''
-                qeury = f"SELECT * FROM mychat.contacts inner join users on contacts.contact_user_id=users.user_id where contacts.user_id={id}"
-                users_data_base_cursor.execute(qeury)
+
+                query = f"SELECT * FROM mychat.contacts inner join users on contacts.contact_user_id = users.user_id where contacts.user_id = {id}"
+                users_data_base_cursor.execute(query)
+
                 for contact in users_data_base_cursor:
                     all_contacts += contact[7] + ' '
                     all_contacts += str(contact[2])
@@ -173,10 +174,12 @@ class create_socket():
                 passive_user = data[2]
                 passive_user_id = ''
 
-                users_data_base_cursor.execute("SELECT * FROM users")
-                for user in users_data_base_cursor:
-                    if passive_user == user[3]:
-                        passive_user_id = user[0]
+                query = f"SELECT user_id FROM users WHERE nick_name = '{passive_user}'"
+                users_data_base_cursor.execute(query)
+
+                passive_user_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                passive_user_id = passive_user_id[0]
+
 
                 users_data_base_cursor.execute("INSERT INTO contacts (user_id, contact_user_id, last_message_id) VALUES (%s, %s, %s)",
                                                (active_user_id, passive_user_id, 0))
@@ -197,18 +200,21 @@ class create_socket():
 
                 reciever_user = data[3]
 
-                users_data_base_cursor.execute("SELECT * FROM users")
-                for user in users_data_base_cursor:
-                    if reciever_user == user[3]:
-                        reciever_user_id = int(user[0])
+                query = f"SELECT user_id FROM users WHERE nick_name = '{reciever_user}'"
+                users_data_base_cursor.execute(query)
+
+                reciever_user_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                reciever_user_id = reciever_user_id[0]
 
                 users_data_base_cursor.execute("INSERT INTO messages_info (message_text_info, sender_id, reciever_id) VALUES (%s, %s, %s)",
                                                (data[1], sender_user_id, reciever_user_id))
                 users_data_base.commit()
 
-                users_data_base_cursor.execute("SELECT * FROM messages_info")
-                for message in users_data_base_cursor:
-                    last_message_id = int(message[0])
+                query = "SELECT last_message_id FROM mychat.contacts ORDER BY DESC LIMIT 1"
+                users_data_base_cursor.execute(query)
+
+                last_message_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                last_message_id = last_message_id[0]
 
                 users_data_base_cursor.execute(f"UPDATE mychat.contacts SET last_message_id = {last_message_id} WHERE user_id = {sender_user_id} AND contact_user_id = {reciever_user_id}")
                 users_data_base.commit()
@@ -225,62 +231,86 @@ class create_socket():
 
                 counter = 0
 
-                users_data_base_cursor.execute("SELECT * FROM users")
-                for user in users_data_base_cursor:
-                    if user[3] == contact_nickname:
-                        contact_id = int(user[0])
+                query = f"SELECT user_id FROM users WHERE nick_name = '{contact_nickname}'"
+                users_data_base_cursor.execute(query)
 
-                users_data_base_cursor.execute("SELECT * FROM contacts")
-                for friendship in users_data_base_cursor:
-                    if friendship[0] == user_id:
-                        if friendship[1] == contact_id:
-                            counter = friendship[3]
+                contact_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                contact_id = contact_id[0]
+
+                query = f"SELECT last_message_id FROM contacts WHERE user_id = {user_id} AND contact_user_id = {contact_id}"
+                users_data_base_cursor.execute(query)
+
+                counter = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                counter = counter[0]
 
                 messages = ''
                 last_message_id = 0
 
-                users_data_base_cursor.execute("SELECT * FROM messages_info")
+                query = f"SELECT * FROM messages_info WHERE reciever_id = {user_id} AND sender_id = {contact_id}"
+                users_data_base_cursor.execute(query)
+
                 for message in users_data_base_cursor:
-                    if message[3] == user_id:
-                        if message[2] == contact_id:
-                            if message[0] > counter:
+                    if message[0] > counter:
 
-                                messages += message[1]
-                                messages += ' '
+                        messages += message[1]
+                        messages += ' '
 
-                                message_time = str(message[4])
-                                messages += message_time[:-3]
+                        message_time = str(message[4])
+                        messages += message_time[:-3]
 
-                                messages += '/separation/'
+                        messages += '/separation/'
 
-                                last_message_id = int(message[0])
+                        last_message_id = int(message[0])
 
                 if messages != '':
 
                     messages = '/recieve_message ' + messages[:-12]
                     client.send(messages.encode('utf-8'))
 
-                    users_data_base_cursor.execute(f"UPDATE mychat.contacts SET last_message_id = {last_message_id} WHERE user_id = {user_id} AND contact_user_id = {contact_id}")
+                    query = f"UPDATE mychat.contacts SET last_message_id = {last_message_id} WHERE user_id = {user_id} AND contact_user_id = {contact_id}"
+                    users_data_base_cursor.execute(query)
                     users_data_base.commit()
 
             elif (data.decode()).startswith('/recieve_last_five_messages '):
                 
                 data = data.decode()
                 data = data.split()
-                user_id = data[1]
+                user_id = int(data[1])
 
                 last_five_messages = ''
+                query = "SELECT user_id FROM mychat.users WHERE nick_name = '{}'".format(data[2])
+                users_data_base_cursor.execute(query)
 
-                users_data_base_cursor.execute(f"(SELECT * FROM messages_info ORDER BY message_id DESC LIMIT 5) ORDER BY message_id ASC")
+                contact_user_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                contact_user_id = contact_user_id[0]
+
+                query = "SELECT last_message_id FROM mychat.contacts WHERE user_id = {} AND contact_user_id = {}".format(user_id, contact_user_id)
+                users_data_base_cursor.execute(query)
+
+                last_message_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
+                last_message_id = last_message_id[0]
+
+                counter = 5
+
+                query = f"(SELECT * FROM mychat.messages_info WHERE (sender_id = {user_id} AND reciever_id = {contact_user_id}) OR ({contact_user_id} AND reciever_id = {user_id}) ORDER BY message_id DESC)"
+                users_data_base_cursor.execute(query)
                 for message in users_data_base_cursor:
-                    now = str(message[4])
-                    if message[2] == user_id:
-                        last_five_messages += f'{message[1]} {now[:-3]} (you)'
 
-                    else:
-                        last_five_messages += f'{message[1]} {now[:-3]} ({data[2]})'
+                    if counter == 0:
+                        break
 
-                    last_five_messages += '/separation/'
+                    if message[0] <= last_message_id:
+
+                        now = str(message[4])
+                        if message[2] == user_id and message[3] == contact_user_id:
+                            last_five_messages += f'{message[1]} {now[:-3]} (you)'
+                            counter -= 1
+                            last_five_messages += '/separation/'
+
+                        elif message[2] == contact_user_id and message[3] == user_id:
+                            last_five_messages += f'{message[1]} {now[:-3]} ({data[2]})'
+                            counter -= 1
+                            last_five_messages += '/separation/'
 
                 last_five_messages = last_five_messages[:-12]
                 client.send(f'/recieve_last_five_messages {last_five_messages}'.encode('utf-8'))
