@@ -27,10 +27,6 @@ column = 0
 chat_gui = False
 chat_is_on = False
 
-add_new_contact_gui = False
-my_contact_gui = False
-friend_request_gui = False
-
 nickname = ''
 id = '0'
 
@@ -51,7 +47,7 @@ class create_client():
         if self.all_users != 'no_users':
             self.all_users_list = self.all_users.split('/')
 
-        login_screen(self.client_socket)
+        login_and_register_screen(self.client_socket)
 
         if logged_in == 'false':
             self.close_program()
@@ -75,10 +71,10 @@ class create_client():
                 self.my_contacts_list_and_dates = []
 
             self.receive_thread = threading.Thread(target = self.receive)
-            self.mycontacts_screen_thread = threading.Thread(target = self.mycontacts_screen)
+            self.main_tabs_screen_thread = threading.Thread(target = self.main_tabs_screen)
 
             self.receive_thread.start()
-            self.mycontacts_screen_thread.start()
+            self.main_tabs_screen_thread.start()
 
     def receive(self):
 
@@ -93,12 +89,12 @@ class create_client():
                 if not user_nickname in self.all_users_list:
                     if user_nickname != nickname:
                         self.all_users_list.append(user_nickname)
-                        if add_new_contact_gui:
-                            users_list.insert(END, user_nickname)
+                        users_list.insert(END, user_nickname)
 
             elif data.startswith('/new_friendship '):
 
                 data = data.split()
+                print(data)
 
                 if nickname in data:
 
@@ -116,10 +112,9 @@ class create_client():
 
                         replaced_time = (str(now).split()[0]) + '_' + (str(now).split()[1])
 
-                        if my_contact_gui:
-                            contacts_table.insert(parent = '', index = 'end',
-                                    iid = self.my_contacts_list_and_dates.index(nickname_time),
-                                    text = new_contact, values = replaced_time[:-3])
+                        contacts_table.insert(parent = '', index = 'end',
+                                iid = self.my_contacts_list_and_dates.index(nickname_time),
+                                text = new_contact, values = replaced_time[:-3])
                         
                         self.insert_contacts_list(self.all_users_list)
 
@@ -163,20 +158,28 @@ class create_client():
 
 #my contacts screen
 
-    def mycontacts_screen(self):
-        global contacts_table, win, my_contact_gui
+    def main_tabs_screen(self):
+        global contacts_table, win, my_contact_gui, add_new_contact_gui, users_list, search_entry, my_tab
 
         win = CTk()
         win.geometry("750x420+585+330")
         win.title('Mychat')
 
-        title = CTkLabel(win, text ='My Contacts', font = CTkFont(size = 30, weight = 'bold'))
-        title.pack(pady = 10)
+        my_tab = CTkTabview(win, corner_radius = 10, height = 420)
+        my_tab.pack(pady = 10)
+
+        my_contacts_tab = my_tab.add('My Contacts')
+        add_contact_tab = my_tab.add('Add_Contact')
+
+        #my contacts tab
+
+        title = CTkLabel(my_contacts_tab, text ='My Contacts', font = CTkFont(size = 30, weight = 'bold'))
+        title.pack(pady = 5)
 
         table_style = ttk.Style()
         table_style.theme_use('clam')
         table_style.configure('Treeview',
-                background = '#2A2D2E',
+                background = '#2B2B2B',
                 foreground = 'white',
                 fieldbackground = '#343638'
                 )
@@ -184,7 +187,7 @@ class create_client():
         table_style.map('Treeview', background = [('selected', '#343638')])
         
         table_style.configure('Treeview.Heading',
-                background = '#2A2D2E',
+                background = '#2B2B2B',
                 foreground = colour_1,
                 relief = 'flat'
         )
@@ -195,8 +198,8 @@ class create_client():
         table_style.configure('Treeview.Heading', font = (CTkFont, 13, 'bold'))
         table_style.layout('Treeview', [('Treeview.treearea', {'sticky': 'nswe'})])
 
-        table_frame = CTkFrame(win, height = 400, width = 350, corner_radius = 26)
-        table_frame.pack(pady = 15)
+        table_frame = CTkFrame(my_contacts_tab, height = 400, width = 350, corner_radius = 26)
+        table_frame.pack(pady = 5)
 
         contacts_table = ttk.Treeview(table_frame, style = 'Treeview')
 
@@ -210,21 +213,47 @@ class create_client():
 
         contacts_table.pack()
 
-        add_contact_button = create_button(win, 'Add Contact', CTkFont, 30, 260, self.add_new_contact_screen, ())
-        add_contact_button = add_contact_button.putinfo()
-        add_contact_button.pack()
-
-        log_out_button = create_button(win, 'Exit', CTkFont, 30, 260, self.logged_out, ())
+        log_out_button = create_button(my_contacts_tab, 'Exit', CTkFont, 30, 260, self.logged_out, ())
         log_out_button = log_out_button.putinfo()
-        log_out_button.pack(pady = 10)
+        log_out_button.pack(pady = 5)
 
         self.insert_my_contacts()
 
         contacts_table.bind('<Double-Button-1>', self.chat_screen)
 
-        my_contact_gui = True
+        #add contact tab
+
+        title_label = CTkLabel(add_contact_tab, text ='Add New Contact', font = CTkFont(size = 30, weight = 'bold'))
+        title_label.pack(pady = 10)
+
+        search_entry = CTkEntry(add_contact_tab, placeholder_text = 'Search for new contacts..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        search_entry.pack(pady = 10)
+
+        users_list = Listbox(add_contact_tab, height = 8, width = 50, font = CTkFont(size = 14, weight = 'normal'),
+                             background = '#2A2D2E', foreground = colour_1)
+        users_list.pack()
+
+        list_style = ttk.Style()
+        list_style.theme_use('clam')
+        list_style.configure('user_list',
+                background = '#2A2D2E',
+                foreground = 'white',
+                fieldbackground = '#343638'
+                )
+        
+        list_style.map('user_list', background = [('selected', '#343638')])
+        
+
+        add_button = create_button(add_contact_tab, 'Add', CTkFont, 30, 260, self.add_new_contact_db, ())
+        add_button = add_button.putinfo()
+        add_button.pack(pady = 30)
+
+        self.insert_contacts_list(self.all_users_list)
+        search_entry.bind("<KeyRelease>", self.create_contacts_list)
 
         win.mainloop()
+
+#my contacts min func
 
     def insert_my_contacts(self):
 
@@ -237,10 +266,60 @@ class create_client():
         win.destroy()
         self.close_program()
 
+#add new contact min func
+
+    def add_new_contact_db(self):
+        global add_new_contact_gui
+
+        selected_contact = users_list.curselection()
+
+        if selected_contact:
+
+            date_time = datetime.now()
+            now = date_time.strftime("%d/%m/%Y %H:%M:%S")
+
+            selected_contact = users_list.get(ANCHOR)
+
+            self.client_socket.send(f'/new_friendship `{id}`{selected_contact}`{nickname}'.encode('utf-8'))
+
+            self.my_contacts_list_and_dates.append(f'{selected_contact} {now}')
+            self.my_contacts_nicknames_list.append(selected_contact)
+
+            self.insert_contacts_list(self.all_users_list)
+
+            message_box(f'{selected_contact} successfuly added!', 'info')
+
+    def create_contacts_list(self, e):
+
+        typed = search_entry.get()
+
+        if typed == '':
+            data = self.all_users_list
+
+        else:
+            data = []
+            for contact in self.all_users_list:
+                if typed.lower() in contact.lower():
+                    data.append(contact)
+
+        self.insert_contacts_list(data)
+
+    def insert_contacts_list(self, data):
+
+        users_list.delete('0', END)
+
+        for contact in data:
+            if not contact in self.my_contacts_nicknames_list:
+                if contact != nickname:
+                    users_list.insert(END, contact)
+
 #chat screen
 
     def chat_screen(self, e):
-        global root, msg_entry, selected_contact, text_widget, chat_is_on
+        global msg_entry, selected_contact, text_widget, chat_is_on, my_contact_gui, add_new_contact_gui
+
+        my_contact_gui = False
+        add_new_contact_gui = False
 
         selected_contact = ''
         selected_contact = contacts_table.focus()
@@ -248,48 +327,38 @@ class create_client():
         selected_contact = selected_contact.get('text')
 
         if selected_contact != '':
-            if not chat_is_on:
+            if chat_is_on:
+                my_tab.delete('Chat')
 
-                win.destroy()
+            chat_tab = my_tab.add('Chat')
 
-                root = CTk()
-                root.geometry("750x420+585+330")
-                root.title(f'Mychat')
+            # head label
+            head_label = CTkLabel(chat_tab, text = f'Mychat - {selected_contact}', font = CTkFont(size = 20, weight = 'bold'))
+            head_label.pack()
 
-                # head label
-                head_label = CTkLabel(root, text = f'Mychat - {selected_contact}', font = CTkFont(size = 30, weight = 'bold'))
-                head_label.pack(pady = 10)
+            # text widget
+            text_widget = CTkTextbox(chat_tab, width=500, height=260, font = CTkFont(size = 12, weight = 'bold'), 
+                            text_color = colour_1, corner_radius = 10, activate_scrollbars = True,
+                            scrollbar_button_hover_color = colour_1, border_width = 4, border_color = colour_1,
+                            border_spacing = 16, wrap = 'word')
+            text_widget.pack(pady = 5)
+            text_widget.configure(state = "disabled")
 
-                # text widget
-                text_widget = CTkTextbox(root, width=500, height=280, font = CTkFont(size = 12, weight = 'bold'), 
-                                text_color = colour_1, corner_radius = 10, activate_scrollbars = True,
-                                scrollbar_button_hover_color = colour_1, border_width = 4, border_color = colour_1,
-                                border_spacing = 16, wrap = 'word')
-                text_widget.pack(pady = 15)
-                text_widget.configure(state = "disabled")
+            # message entry box
+            msg_entry = CTkEntry(chat_tab, placeholder_text = 'Write a message..', width = 300, height = 34, text_color = colour_1, font = CTkFont(size = 14, weight = 'bold'))
+            msg_entry.place(x = 10, y = 305)
 
-                # send button
-                send_button = create_button(root, 'Send', CTkFont, 30, 170, self.send_message, ())
-                send_button = send_button.putinfo()
-                send_button.place(x = 380, y = 360)
+            # send button
+            send_button = create_button(chat_tab, 'Send', CTkFont, 20, 140, self.send_message, ())
+            send_button = send_button.putinfo()
+            send_button.place(x = 358, y = 307)
 
-                # return button
-                send_button = create_button(root, 'Return', CTkFont, 30, 170, self.return_to_my_contacts_screen, ())
-                send_button = send_button.putinfo()
-                send_button.place(x = 570, y = 360)
+            chat_is_on = True
 
-                # message entry box
-                msg_entry = CTkEntry(root, placeholder_text = 'Write a message..', width = 300, height = 44, text_color = colour_1, font = CTkFont(size = 16, weight = 'bold'))
-                msg_entry.place(x = 60, y = 360)
+            self.client_socket.send(f'/recieve_last_five_messages {id} {selected_contact}'.encode('utf-8'))
 
-                chat_is_on = True
-
-                self.client_socket.send(f'/recieve_last_five_messages {id} {selected_contact}'.encode('utf-8'))
-
-                recieve_messages_thread = threading.Thread(target = self.recieve_message, args = (selected_contact,))
-                recieve_messages_thread.start()
-
-                root.mainloop()
+            recieve_messages_thread = threading.Thread(target = self.recieve_message, args = (selected_contact,))
+            recieve_messages_thread.start()
 
     def send_message(self):
         
@@ -313,107 +382,6 @@ class create_client():
         while(chat_is_on):
             self.client_socket.send(f'/recieve_message `{id}`{selected_contact}'.encode('utf-8'))
             time.sleep(3)
-
-#add new contact screen
-
-    def add_new_contact_screen(self):
-        global root, users_list, add_new_contact_gui, search_entry, my_contact_gui
-
-        win.destroy()
-        my_contact_gui = False
-
-        root = CTk()
-        root.geometry("750x420+585+330")
-        root.title('Mychat')
-
-        title_label = CTkLabel(root, text ='Add New Contact', font = CTkFont(size = 30, weight = 'bold'))
-        title_label.pack(pady = 10)
-
-        search_entry = CTkEntry(root, placeholder_text = 'Search for new contacts..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
-        search_entry.pack(pady = 10)
-
-        users_list = Listbox(root, height = 8, width = 50, font = CTkFont(size = 14, weight = 'normal'),
-                             background = '#2A2D2E', foreground = colour_1)
-        users_list.pack()
-
-        list_style = ttk.Style()
-        list_style.theme_use('clam')
-        list_style.configure('user_list',
-                background = '#2A2D2E',
-                foreground = 'white',
-                fieldbackground = '#343638'
-                )
-        
-        list_style.map('user_list', background = [('selected', '#343638')])
-        
-
-        add_button = create_button(root, 'Add', CTkFont, 30, 260, self.add_new_contact_db, ())
-        add_button = add_button.putinfo()
-        add_button.pack(pady = 30)
-
-        return_button = create_button(root, 'Return', CTkFont, 30, 260, self.return_to_my_contacts_screen, ())
-        return_button = return_button.putinfo()
-        return_button.pack(pady = 1)
-
-        add_new_contact_gui = True
-
-        self.insert_contacts_list(self.all_users_list)
-        search_entry.bind("<KeyRelease>", self.create_contacts_list)
-
-        root.mainloop()
-
-    def add_new_contact_db(self):
-        global add_new_contact_gui
-
-        selected_contact = users_list.curselection()
-
-        if selected_contact:
-
-            date_time = datetime.now()
-            now = date_time.strftime("%d/%m/%Y %H:%M:%S")
-
-            selected_contact = users_list.get(ANCHOR)
-
-            self.client_socket.send(f'/new_friendship `{id}`{selected_contact}`{nickname}'.encode('utf-8'))
-
-            self.my_contacts_list_and_dates.append(f'{selected_contact} {now}')
-            self.my_contacts_nicknames_list.append(selected_contact)
-
-            self.insert_contacts_list(self.all_users_list)
-
-            root.destroy()
-
-            add_new_contact_gui = False
-
-            message_box(f'{selected_contact} successfuly added!', 'info')
-
-            self.mycontacts_screen()
-
-    def create_contacts_list(self, e):
-
-        typed = search_entry.get()
-
-        if typed == '':
-            data = self.all_users_list
-
-        else:
-            data = []
-            for contact in self.all_users_list:
-                if typed.lower() in contact.lower():
-                    data.append(contact)
-
-        self.insert_contacts_list(data)
-
-    def insert_contacts_list(self, data):
-
-        if add_new_contact_gui:
-
-            users_list.delete('0', END)
-
-            for contact in data:
-                if not contact in self.my_contacts_nicknames_list:
-                    if contact != nickname:
-                        users_list.insert(END, contact)
 
 #friend request screen
 
@@ -466,20 +434,11 @@ class create_client():
 
         root.mainloop()
 
-# return to main screen
+#login/register
 
-    def return_to_my_contacts_screen(self):
-        global add_new_contact_gui, chat_is_on
-
-        root.destroy()
-        add_new_contact_gui = False
-        chat_is_on = False
-        self.mycontacts_screen()
-
-#login
-
-def login_screen(client_socket):
-        global win, log_username_entry, log_password_entry
+def login_and_register_screen(client_socket):
+        global win, log_username_entry, log_password_entry, register_tab
+        global reg_nickname_entry, reg_username_entry, reg_passwordA_entry, reg_passwordB_entry
 
         win = CTk()
         win.geometry("750x420+585+330")
@@ -488,34 +447,70 @@ def login_screen(client_socket):
 
         set_default_color_theme('green')
 
-        log_username_label = CTkLabel(win, text="Username", font = CTkFont(size = 30, weight = 'bold')).pack()
-        log_username_entry = CTkEntry(win, placeholder_text = 'Enter username..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        my_tab =  CTkTabview(win, corner_radius = 10)
+        my_tab.pack(pady = 10)
+
+        login_tab = my_tab.add('Login')
+        register_tab = my_tab.add('Register')
+
+        #login tab
+
+        log_username_label = CTkLabel(login_tab, text="Username", font = CTkFont(size = 30, weight = 'bold')).pack(pady = 15)
+        log_username_entry = CTkEntry(login_tab, placeholder_text = 'Enter username..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
         log_username_entry.pack(pady = 10)
 
-        log_password_label = CTkLabel(win, text="Password", font = CTkFont(size = 30, weight = 'bold')).pack()
-        log_password_entry = CTkEntry(win, placeholder_text = 'Enter password..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        log_password_label = CTkLabel(login_tab, text="Password", font = CTkFont(size = 30, weight = 'bold')).pack()
+        log_password_entry = CTkEntry(login_tab, placeholder_text = 'Enter password..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
         log_password_entry.configure(show = '*')
         log_password_entry.pack(pady = 10)
 
-        checkbox = CTkCheckBox(win, text = "show password", fg_color = colour_1, 
+        checkbox = CTkCheckBox(login_tab, text = "show password", fg_color = colour_1, 
                     checkbox_height = 20, checkbox_width = 20, corner_radius = 26, text_color = colour_1, command = show_password_login)
         checkbox.pack()
 
-        login_frame = CTkFrame(win, width = 500, height = 200)
+        login_frame = CTkFrame(login_tab, width = 500, height = 200)
         login_frame.pack(pady=35)
 
         login_button = create_button(login_frame, 'Login', CTkFont, 30, 260, loged_in, client_socket)
         login_button = login_button.putinfo()
         login_button.pack()
 
-        register_frame = CTkFrame(win, width = 500, height = 200)
-        register_frame.pack(pady=4)
+        #register tab
 
-        register_button = create_button(register_frame, 'Register', CTkFont, 30, 260, register_screen, client_socket)
-        register_button = register_button.putinfo()
-        register_button.pack()
+        reg_nickname_label = CTkLabel(register_tab, text="Nickname", font = CTkFont(size = 20, weight = 'bold')).pack(pady = 5)
+        reg_nickname_entry = CTkEntry(register_tab, placeholder_text = 'Enter nickname..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        reg_nickname_entry.pack(pady = 5)
+
+
+        reg_usename_label = CTkLabel(register_tab, text="Username", font = CTkFont(size = 20, weight = 'bold')).pack(pady = 5)
+        reg_username_entry = CTkEntry(register_tab, placeholder_text = 'Enter username..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        reg_username_entry.pack(pady = 5)
+
+
+        reg_password_label = CTkLabel(register_tab, text="Password", font = CTkFont(size = 20, weight = 'bold')).pack(pady = 5)
+
+        reg_passwordA_entry = CTkEntry(register_tab, placeholder_text = 'Enter password..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        reg_passwordA_entry.configure(show = '*')
+        reg_passwordA_entry.pack(pady = 5)
+
+        reg_passwordB_entry = CTkEntry(register_tab, placeholder_text = 'Confirm password..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
+        reg_passwordB_entry.configure(show = '*')
+        reg_passwordB_entry.pack(pady = 5)
+
+        checkbox = CTkCheckBox(register_tab, text = "show password", fg_color = colour_1, 
+                    checkbox_height = 20, checkbox_width = 20, corner_radius = 26, text_color = colour_1, command = show_password_register)
+        checkbox.pack(pady = 5)
+
+        submit_frame = CTkFrame(register_tab, width = 500, height = 200)
+        submit_frame.pack(pady = 5)
+
+        submit_button = create_button(submit_frame, 'Submit', CTkFont, 30, 260, submited, client_socket)
+        submit_button = submit_button.putinfo()
+        submit_button.pack()
 
         win.mainloop()
+
+#login min func
 
 def show_password_login():
     if log_password_entry.cget('show') == '':
@@ -577,57 +572,7 @@ def loged_in(client_socket):
             else:
                 message_box('You cant have signs letters in your input!', 'error')
 
-#register
-
-def register_screen(client_socket):
-        global reg_nickname_entry, reg_username_entry, reg_passwordA_entry, reg_passwordB_entry, root
-
-        win.destroy()
-
-        root = CTk()
-        root.geometry("750x420+585+330")
-        root.title('Register Page')
-        root.iconbitmap('loginlockrefreshincircularbutton_80241.ico')
-
-        set_default_color_theme('green')
-
-        reg_nickname_label = CTkLabel(root, text="Nickname", font = CTkFont(size = 20, weight = 'bold')).pack(pady = 10)
-        reg_usename_label = CTkLabel(root, text="Username", font = CTkFont(size = 20, weight = 'bold')).pack(pady = 40)
-        reg_password_label = CTkLabel(root, text="Password", font = CTkFont(size = 20, weight = 'bold')).pack(pady = 10)
-
-        reg_nickname_entry = CTkEntry(root, placeholder_text = 'Enter nickname..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
-        reg_nickname_entry.place(x = 220, y = 50)
-
-        reg_username_entry = CTkEntry(root, placeholder_text = 'Enter username..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
-        reg_username_entry.place(x = 220, y = 125)
-
-        reg_passwordA_entry = CTkEntry(root, placeholder_text = 'Enter password..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
-        reg_passwordA_entry.configure(show = '*')
-        reg_passwordA_entry.place(x = 220, y = 200)
-
-        reg_passwordB_entry = CTkEntry(root, placeholder_text = 'Confirm password..', width = 300, text_color = colour_1, font = CTkFont(size = 12, weight = 'bold'))
-        reg_passwordB_entry.configure(show = '*')
-        reg_passwordB_entry.place(x = 220, y = 235)
-
-        checkbox = CTkCheckBox(root, text = "show password", fg_color = colour_1, 
-                    checkbox_height = 20, checkbox_width = 20, corner_radius = 26, text_color = colour_1, command = show_password_register)
-        checkbox.pack(pady = 68)
-
-        submit_frame = CTkFrame(root, width = 500, height = 200)
-        submit_frame.place(x = 240, y = 300)
-
-        submit_button = create_button(submit_frame, 'Submit', CTkFont, 30, 260, submited, client_socket)
-        submit_button = submit_button.putinfo()
-        submit_button.pack()
-
-        return_frame = CTkFrame(root, width = 500, height = 200)
-        return_frame.place(x = 240, y = 360)
-
-        return_button = create_button(return_frame, 'Return', CTkFont, 30, 260, return_to_login, client_socket)
-        return_button = return_button.putinfo()
-        return_button.pack()
-
-        root.mainloop()
+#register min func
 
 def get_register_info():
         reg_nickname = reg_nickname_entry.get()
@@ -684,6 +629,7 @@ def submited(client_socket):
 
             else:
                 message_box('Your password have to contain at least 8 letters!', 'info')
+                check = None
 
         match check:
             case True:
@@ -700,17 +646,12 @@ def submited(client_socket):
                     logged_in = 'true'
                     nickname = get_register_info()[0]
                     message_box('You have been registered successfully!', 'info')
-                    root.destroy()
                     win.destroy()
                 else:
                     message_box('Your nickname is already taken', 'error')
 
             case False:
                 message_box('Info must match', 'error')
-
-def return_to_login(client_socket):
-    root.destroy()
-    login_screen(client_socket)
 
 
 def message_box(string, sign):
