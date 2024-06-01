@@ -29,6 +29,7 @@ chat_is_on = False
 
 add_new_contact_gui = False
 my_contact_gui = False
+friend_request_gui = False
 
 nickname = ''
 id = '0'
@@ -413,6 +414,57 @@ class create_client():
                 if not contact in self.my_contacts_nicknames_list:
                     if contact != nickname:
                         users_list.insert(END, contact)
+
+#friend request screen
+
+    def friend_request_screen(self):
+        global friend_request_list
+
+        root = CTk()
+        root.geometry("750x420+585+330")
+        root.title('Mychat')
+
+        title = CTkLabel(root, text ='Friend Requests', font = CTkFont(size = 30, weight = 'bold'))
+        title.pack(pady = 10)
+
+        friend_request_list = Listbox(root, height = 8, width = 50, font = CTkFont(size = 14, weight = 'normal'),
+                             background = '#2A2D2E', foreground = colour_1)
+        friend_request_list.pack()
+
+        list_style = ttk.Style()
+        list_style.theme_use('clam')
+        list_style.configure('user_list',
+                background = '#2A2D2E',
+                foreground = 'white',
+                fieldbackground = '#343638'
+                )
+        
+        list_style.map('friend_request_list', background = [('selected', '#343638')])
+
+        table_frame = CTkFrame(root, height = 400, width = 350, corner_radius = 26)
+        table_frame.pack(pady = 15)
+
+        contacts_table = ttk.Treeview(table_frame, style = 'Treeview')
+
+        contacts_table.column('#0')
+
+        contacts_table.heading('#0', text = 'Requests', anchor = W)
+
+        contacts_table.pack()
+
+        #add_contact_button = create_button(root, 'Accept', CTkFont, 30, 260, pass, ())
+        #add_contact_button = add_contact_button.putinfo()
+        #add_contact_button.pack()
+
+        log_out_button = create_button(root, 'Return', CTkFont, 30, 260, self.return_to_my_contacts_screen, ())
+        log_out_button = log_out_button.putinfo()
+        log_out_button.pack(pady = 10)
+
+        self.insert_my_contacts()
+
+        friend_request_gui = True
+
+        root.mainloop()
 
 # return to main screen
 
