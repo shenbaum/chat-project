@@ -149,11 +149,11 @@ class create_socket():
 
                 all_contacts = ''
 
-                query = f"SELECT * FROM mychat.contacts inner join users on contacts.contact_user_id = users.user_id where contacts.user_id = {id}"
+                query = f"SELECT * FROM mychat.contacts inner join mychat.users on contacts.contact_user_id = users.user_id where contacts.user_id = {id}"
                 users_data_base_cursor.execute(query)
 
                 for contact in users_data_base_cursor:
-                    all_contacts += contact[7] + ' '
+                    all_contacts += contact[8] + ' '
                     all_contacts += str(contact[2])
                     all_contacts += '/separation/'
                 all_contacts = all_contacts[:-12]
@@ -179,7 +179,6 @@ class create_socket():
 
                 passive_user_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
                 passive_user_id = passive_user_id[0]
-
 
                 users_data_base_cursor.execute("INSERT INTO contacts (user_id, contact_user_id, last_message_id) VALUES (%s, %s, %s)",
                                                (active_user_id, passive_user_id, 0))
@@ -210,7 +209,7 @@ class create_socket():
                                                (data[1], sender_user_id, reciever_user_id))
                 users_data_base.commit()
 
-                query = "SELECT last_message_id FROM mychat.contacts ORDER BY DESC LIMIT 1"
+                query = f"SELECT last_message_id FROM mychat.contacts WHERE user_id = {sender_user_id} AND contact_user_id = {reciever_user_id}"
                 users_data_base_cursor.execute(query)
 
                 last_message_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
