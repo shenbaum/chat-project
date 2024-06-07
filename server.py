@@ -144,7 +144,7 @@ class create_socket():
             elif (data.decode()).startswith('/get_contacts '):
 
                 data = data.decode()
-                data = data.strip('/get_contacts `')
+                data = data[15:]
                 id = int(data)
 
                 all_contacts = ''
@@ -209,7 +209,7 @@ class create_socket():
                                                (data[1], sender_user_id, reciever_user_id))
                 users_data_base.commit()
 
-                query = f"SELECT last_message_id FROM mychat.contacts WHERE user_id = {sender_user_id} AND contact_user_id = {reciever_user_id}"
+                query = f"SELECT message_id FROM mychat.messages_info WHERE sender_id = {sender_user_id} AND reciever_id = {reciever_user_id} ORDER BY message_id DESC LIMIT 1"
                 users_data_base_cursor.execute(query)
 
                 last_message_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
@@ -249,6 +249,7 @@ class create_socket():
                 users_data_base_cursor.execute(query)
 
                 for message in users_data_base_cursor:
+
                     if message[0] > counter:
 
                         messages += message[1]
@@ -291,8 +292,9 @@ class create_socket():
 
                 counter = 5
 
-                query = f"(SELECT * FROM mychat.messages_info WHERE (sender_id = {user_id} AND reciever_id = {contact_user_id}) OR ({contact_user_id} AND reciever_id = {user_id}) ORDER BY message_id DESC)"
+                query = f"(SELECT * FROM mychat.messages_info WHERE (sender_id = {user_id} AND reciever_id = {contact_user_id}) OR (sender_id = {contact_user_id} AND reciever_id = {user_id}) ORDER BY message_id DESC)"
                 users_data_base_cursor.execute(query)
+
                 for message in users_data_base_cursor:
 
                     if counter == 0:
@@ -310,10 +312,10 @@ class create_socket():
                             last_five_messages += f'{message[1]} {now[:-3]} ({data[2]})'
                             counter -= 1
                             last_five_messages += '/separation/'
-
+                
                 last_five_messages = last_five_messages[:-12]
                 client.send(f'/recieve_last_five_messages {last_five_messages}'.encode('utf-8'))
 
 server_socket = create_socket()
 print('server running...')
-server_socket.receive() 
+server_socket.receive()
