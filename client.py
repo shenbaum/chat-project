@@ -14,7 +14,7 @@ HOST, PORT = '192.168.1.41', 8820
 #colours
 colour_1 = '#3CB371'
 colour_2 = '#05d7ff'
-colour_3 = '#65e7ff'
+colour_3 = '#123521'
 colour_4 = 'BLACK'
 
 public_partner = None
@@ -94,7 +94,6 @@ class create_client():
             elif data.startswith('/new_friendship '):
 
                 data = data.split()
-                print(data)
 
                 if nickname in data:
 
@@ -122,12 +121,15 @@ class create_client():
 
             elif data.startswith('/recieve_message '):
 
-                data = data.strip('/recieve_message ')
+                data = data[17:]
                 if data != '':
 
                     messages = data.split('/separation/')
+
                     if chat_is_on:
                         text_widget.configure(state = 'normal')
+                        text_widget.configure(text_color = colour_3)
+
                         for message in messages:
                             text_widget.insert(INSERT, f'{message} ({selected_contact})\n')
                         text_widget.configure(state = 'disabled')
@@ -136,7 +138,8 @@ class create_client():
 
                 if chat_is_on:
 
-                    messages = data.strip('/recieve_last_five_messages ')
+                    messages = data[28:]
+
                     messages = messages.split('/separation/')
                     messages.reverse()
 
@@ -145,7 +148,13 @@ class create_client():
                     text_widget.insert(END, f'The last five messages -\n')
 
                     for message in messages:
-                        text_widget.insert(END, f'{message}\n')
+                        if '(you)' in message:
+                            text_widget.configure(text_color = colour_1)
+                            text_widget.insert(END, f'{message}\n')
+
+                        else:
+                            text_widget.configure(text_color = colour_3)
+                            text_widget.insert(END, f'{message}\n')
 
                     text_widget.insert(END, f'new messages -\n')
 
@@ -287,6 +296,8 @@ class create_client():
 
             self.insert_contacts_list(self.all_users_list)
 
+            contacts_table.insert(parent = '', index = 'end', iid = self.my_contacts_list_and_dates.index(f'{selected_contact} {now}'), text = selected_contact, values = now)
+
             message_box(f'{selected_contact} successfuly added!', 'info')
 
     def create_contacts_list(self, e):
@@ -365,7 +376,7 @@ class create_client():
         if msg_entry.get() != '':
 
             now = datetime.now()
-            now = now.strftime("%d/%m/%Y %H:%M")
+            now = now.strftime("%Y/%m/%d %H:%M")
 
             my_message = msg_entry.get()
 
@@ -373,6 +384,7 @@ class create_client():
             self.client_socket.send(data.encode('utf-8'))
 
             text_widget.configure(state = 'normal')
+            text_widget.configure(text_color = colour_1)
             text_widget.insert(INSERT, f'{my_message} {now.split()[0]}_{now.split()[1]} (you)\n')
             msg_entry.delete('0', END)
             text_widget.configure(state = 'disabled')
