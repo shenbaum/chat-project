@@ -6,8 +6,11 @@ import time
 import hashlib
 import rsa
 
-HOST = socket.gethostname()
-PORT = 8820
+host_name = socket.gethostname()
+HOST = socket.gethostbyname(host_name)
+print(HOST)
+HOST='0.0.0.0'
+PORT = 8821
 
 # keys
 public_key, private_key = rsa.newkeys(1024)
@@ -19,7 +22,8 @@ users_data_base = mysql.connector.connect(
     host="localhost",
     user="root",
     password="Nadavsh2006!",
-    database="Mychat"
+    database="Mychat",
+    auth_plugin='mysql_native_password'
 )
 
 users_data_base_cursor = users_data_base.cursor(buffered=True)
@@ -76,7 +80,16 @@ class create_socket():
             if (data).startswith(b'/registered '):
 
                 data = data.strip(b'/registered ')
-                decrypted_info = rsa.decrypt(data, private_key)
+
+                decrypted = False
+                while (not decrypted):
+                    try:
+                        decrypted_info = rsa.decrypt(data, private_key)
+                        decrypted = True
+
+                    except:
+                        pass
+
                 decrypted_info = decrypted_info.decode()
                 info = decrypted_info.split('`')
 
@@ -110,6 +123,7 @@ class create_socket():
                         data = f'{check}`{id}'
                         self.client.send(data.encode('utf-8'))
 
+                        print(f'/new_register {info[0]}')
                         self.broadcast(f'/new_register {info[0]}', client)
                     
                     case 'false':
@@ -118,7 +132,16 @@ class create_socket():
             elif (data).startswith(b'/logged_in '):
 
                 data = data.strip(b'/logged_in ')
-                decrypted_info = rsa.decrypt(data, private_key).decode()
+
+                decrypted = False
+                while (not decrypted):
+                    try:
+                        decrypted_info = rsa.decrypt(data, private_key).decode()
+                        decrypted = True
+
+                    except:
+                        pass
+
                 info = decrypted_info.split('`')
 
                 password = info[1].encode('utf-8')
@@ -142,9 +165,10 @@ class create_socket():
                 client.send(data.encode('utf-8'))
 
             elif (data.decode()).startswith('/get_contacts '):
+                sign = '/get_contacts '
 
                 data = data.decode()
-                data = data[15:]
+                data = data[len(sign):]
                 id = int(data)
 
                 all_contacts = ''
@@ -209,7 +233,7 @@ class create_socket():
                                                (data[1], sender_user_id, reciever_user_id))
                 users_data_base.commit()
 
-                query = f"SELECT message_id FROM mychat.messages_info WHERE sender_id = {sender_user_id} AND reciever_id = {reciever_user_id} ORDER BY message_id DESC LIMIT 1"
+                query = f"SELECT last_message_id FROM mychat.contacts WHERE user_id = {sender_user_id} AND contact_user_id = {reciever_user_id}"
                 users_data_base_cursor.execute(query)
 
                 last_message_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
@@ -249,7 +273,6 @@ class create_socket():
                 users_data_base_cursor.execute(query)
 
                 for message in users_data_base_cursor:
-
                     if message[0] > counter:
 
                         messages += message[1]
@@ -294,7 +317,6 @@ class create_socket():
 
                 query = f"(SELECT * FROM mychat.messages_info WHERE (sender_id = {user_id} AND reciever_id = {contact_user_id}) OR (sender_id = {contact_user_id} AND reciever_id = {user_id}) ORDER BY message_id DESC)"
                 users_data_base_cursor.execute(query)
-
                 for message in users_data_base_cursor:
 
                     if counter == 0:
@@ -312,8 +334,9 @@ class create_socket():
                             last_five_messages += f'{message[1]} {now[:-3]} ({data[2]})'
                             counter -= 1
                             last_five_messages += '/separation/'
-                
+
                 last_five_messages = last_five_messages[:-12]
+                print(last_five_messages)
                 client.send(f'/recieve_last_five_messages {last_five_messages}'.encode('utf-8'))
 
 server_socket = create_socket()
