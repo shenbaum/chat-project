@@ -9,7 +9,7 @@ from customtkinter import *
 import rsa
 from classes import *
 
-HOST, PORT = '192.168.1.41', 8820
+HOST, PORT = '10.64.109.60', 8821
 
 #colours
 colour_1 = '#3CB371'
@@ -42,6 +42,8 @@ class create_client():
         self.running = True
 
         public_partner = rsa.PublicKey.load_pkcs1(self.client_socket.recv(1024))
+
+        self.all_users_lisl = ''
 
         self.all_users = self.client_socket.recv(2048).decode()
         if self.all_users != 'no_users':
@@ -81,10 +83,11 @@ class create_client():
         while(self.running):
 
             data = self.client_socket.recv(1024).decode()
-                
-            if data.startswith('/new_register '):
 
-                user_nickname = data.strip('/new_register ')
+            if data.startswith('/new_register '):
+                sign = '/new_register '
+
+                user_nickname = data[len(sign):]
 
                 if not user_nickname in self.all_users_list:
                     if user_nickname != nickname:
@@ -120,8 +123,9 @@ class create_client():
                         message_box(f'{new_contact} added you to his/her contacts!', 'info')
 
             elif data.startswith('/recieve_message '):
+                sign = '/recieve_message '
 
-                data = data[17:]
+                data = data[len(sign):]
                 if data != '':
 
                     messages = data.split('/separation/')
@@ -135,10 +139,11 @@ class create_client():
                         text_widget.configure(state = 'disabled')
 
             elif data.startswith('/recieve_last_five_messages '):
+                sign = '/recieve_last_five_messages '
 
                 if chat_is_on:
 
-                    messages = data[28:]
+                    messages = data[len(sign):]
 
                     messages = messages.split('/separation/')
                     messages.reverse()
