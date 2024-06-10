@@ -26,6 +26,7 @@ column = 0
 
 chat_gui = False
 chat_is_on = False
+can_double_click = True
 
 nickname = ''
 id = '0'
@@ -40,6 +41,7 @@ class create_client():
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((HOST, PORT))
         self.running = True
+        self.current_chat = ''
 
         public_partner = rsa.PublicKey.load_pkcs1(self.client_socket.recv(1024))
 
@@ -332,49 +334,57 @@ class create_client():
 #chat screen
 
     def chat_screen(self, e):
-        global msg_entry, selected_contact, text_widget, chat_is_on, my_contact_gui, add_new_contact_gui
+        global can_double_click, msg_entry, selected_contact, text_widget, chat_is_on, my_contact_gui, add_new_contact_gui
 
-        my_contact_gui = False
-        add_new_contact_gui = False
+        if can_double_click:
 
-        selected_contact = ''
-        selected_contact = contacts_table.focus()
-        selected_contact = contacts_table.item(selected_contact)
-        selected_contact = selected_contact.get('text')
+            can_double_click = False
+            
+            my_contact_gui = False
+            add_new_contact_gui = False
 
-        if selected_contact != '':
-            if chat_is_on:
-                my_tab.delete('Chat')
+            selected_contact = ''
+            selected_contact = contacts_table.focus()
+            selected_contact = contacts_table.item(selected_contact)
+            selected_contact = selected_contact.get('text')
 
-            chat_tab = my_tab.add('Chat')
+            if selected_contact != '':
+                self.current_chat = selected_contact
+                
+                if chat_is_on:
+                    my_tab.delete('Chat')
 
-            # head label
-            head_label = CTkLabel(chat_tab, text = f'Mychat - {selected_contact}', font = CTkFont(size = 20, weight = 'bold'))
-            head_label.pack()
+                chat_tab = my_tab.add('Chat')
 
-            # text widget
-            text_widget = CTkTextbox(chat_tab, width=500, height=260, font = CTkFont(size = 12, weight = 'bold'), 
-                            text_color = colour_1, corner_radius = 10, activate_scrollbars = True,
-                            scrollbar_button_hover_color = colour_1, border_width = 4, border_color = colour_1,
-                            border_spacing = 16, wrap = 'word')
-            text_widget.pack(pady = 5)
-            text_widget.configure(state = "disabled")
+                # head label
+                head_label = CTkLabel(chat_tab, text = f'Mychat - {selected_contact}', font = CTkFont(size = 20, weight = 'bold'))
+                head_label.pack()
 
-            # message entry box
-            msg_entry = CTkEntry(chat_tab, placeholder_text = 'Write a message..', width = 300, height = 34, text_color = colour_1, font = CTkFont(size = 14, weight = 'bold'))
-            msg_entry.place(x = 10, y = 305)
+                # text widget
+                text_widget = CTkTextbox(chat_tab, width=500, height=260, font = CTkFont(size = 12, weight = 'bold'), 
+                                text_color = colour_1, corner_radius = 10, activate_scrollbars = True,
+                                scrollbar_button_hover_color = colour_1, border_width = 4, border_color = colour_1,
+                                border_spacing = 16, wrap = 'word')
+                text_widget.pack(pady = 5)
+                text_widget.configure(state = "disabled")
 
-            # send button
-            send_button = create_button(chat_tab, 'Send', CTkFont, 20, 140, self.send_message, ())
-            send_button = send_button.putinfo()
-            send_button.place(x = 358, y = 307)
+                # message entry box
+                msg_entry = CTkEntry(chat_tab, placeholder_text = 'Write a message..', width = 300, height = 34, text_color = colour_1, font = CTkFont(size = 14, weight = 'bold'))
+                msg_entry.place(x = 10, y = 305)
 
-            chat_is_on = True
+                # send button
+                send_button = create_button(chat_tab, 'Send', CTkFont, 20, 140, self.send_message, ())
+                send_button = send_button.putinfo()
+                send_button.place(x = 358, y = 307)
 
-            self.client_socket.send(f'/recieve_last_five_messages {id} {selected_contact}'.encode('utf-8'))
+                chat_is_on = True
 
-            recieve_messages_thread = threading.Thread(target = self.recieve_message, args = (selected_contact,))
-            recieve_messages_thread.start()
+                self.client_socket.send(f'/recieve_last_five_messages {id} {selected_contact}'.encode('utf-8'))
+
+                can_double_click = True
+
+                recieve_messages_thread = threading.Thread(target = self.recieve_message, args = (selected_contact,))
+                recieve_messages_thread.start()
 
     def send_message(self):
         
@@ -398,7 +408,11 @@ class create_client():
 
         while(chat_is_on):
             self.client_socket.send(f'/recieve_message `{id}`{selected_contact}'.encode('utf-8'))
+
+            check = self.current_chat
             time.sleep(3)
+            if check != self.current_chat:
+                break
 
 #friend request screen
 
