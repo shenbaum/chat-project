@@ -168,7 +168,7 @@ class create_socket():
                 sign = '/get_contacts '
 
                 data = data.decode()
-                data = data[len(sign):]
+                data = data[(len(sign) + 1):]
                 id = int(data)
 
                 all_contacts = ''
@@ -233,11 +233,11 @@ class create_socket():
                                                (data[1], sender_user_id, reciever_user_id))
                 users_data_base.commit()
 
-                query = f"SELECT last_message_id FROM mychat.contacts WHERE user_id = {sender_user_id} AND contact_user_id = {reciever_user_id}"
+                query = f"SELECT message_id FROM mychat.messages_info WHERE (sender_id = {sender_user_id} AND reciever_id = {reciever_user_id}) OR (sender_id = {reciever_user_id} AND reciever_id = {user_id})"
                 users_data_base_cursor.execute(query)
 
                 last_message_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
-                last_message_id = last_message_id[0]
+                last_message_id = max(last_message_id)
 
                 users_data_base_cursor.execute(f"UPDATE mychat.contacts SET last_message_id = {last_message_id} WHERE user_id = {sender_user_id} AND contact_user_id = {reciever_user_id}")
                 users_data_base.commit()
@@ -245,6 +245,7 @@ class create_socket():
             elif (data.decode()).startswith('/recieve_message '):
 
                 data = data.decode()
+                print(data)
                 data = data.split('`')
 
                 user_id = int(data[1])
@@ -255,7 +256,9 @@ class create_socket():
                 counter = 0
 
                 query = f"SELECT user_id FROM users WHERE nick_name = '{contact_nickname}'"
+                print(query)
                 users_data_base_cursor.execute(query)
+                print('after' + query)
 
                 contact_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
                 contact_id = contact_id[0]
