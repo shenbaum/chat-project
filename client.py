@@ -9,7 +9,7 @@ from customtkinter import *
 import rsa
 from classes import *
 
-HOST, PORT = '10.64.109.60', 8821
+HOST, PORT = '192.168.1.41', 8821
 
 #colours
 colour_1 = '#3CB371'
@@ -27,6 +27,7 @@ column = 0
 chat_gui = False
 chat_is_on = False
 can_double_click = True
+loading_screen_gui = True
 
 nickname = ''
 id = '0'
@@ -109,16 +110,20 @@ class create_client():
                         new_contact = self.my_contacts_nicknames_list[-1]
 
                         date_time = datetime.now()
-                        now = date_time.strftime("%d/%m/%Y %H:%M:%S")
+                        now = date_time.strftime("%Y/%m/%d %H:%M:%S")
+
+                        replaced_now = now.split()
+                        replaced_now_date = replaced_now[0] + '_'
+                        replaced_now_time = replaced_now[1][:-3]
 
                         nickname_time = f'{new_contact} {now}'
                         self.my_contacts_list_and_dates.append(nickname_time)
 
-                        replaced_time = (str(now).split()[0]) + '_' + (str(now).split()[1])
+                        replaced_time = (str(now).split()[0]) + ' ' + (str(now).split()[1])
 
                         contacts_table.insert(parent = '', index = 'end',
                                 iid = self.my_contacts_list_and_dates.index(nickname_time),
-                                text = new_contact, values = replaced_time[:-3])
+                                text = new_contact, values = (replaced_now_date + replaced_now_time))
                         
                         self.insert_contacts_list(self.all_users_list)
 
@@ -133,11 +138,12 @@ class create_client():
                     messages = data.split('/separation/')
 
                     if chat_is_on:
+
                         text_widget.configure(state = 'normal')
-                        text_widget.configure(text_color = colour_3)
 
                         for message in messages:
-                            text_widget.insert(INSERT, f'{message} ({selected_contact})\n')
+                            text_widget.insert(END, f'{message} ({selected_contact})\n')
+
                         text_widget.configure(state = 'disabled')
 
             elif data.startswith('/recieve_last_five_messages '):
@@ -155,13 +161,7 @@ class create_client():
                     text_widget.insert(END, f'The last five messages -\n')
 
                     for message in messages:
-                        if '(you)' in message:
-                            text_widget.configure(text_color = colour_1)
-                            text_widget.insert(END, f'{message}\n')
-
-                        else:
-                            text_widget.configure(text_color = colour_3)
-                            text_widget.insert(END, f'{message}\n')
+                        text_widget.insert(END, f'{message}\n')
 
                     text_widget.insert(END, f'new messages -\n')
 
@@ -171,6 +171,26 @@ class create_client():
         self.running = False
         self.client_socket.close()
         exit(0)
+
+#loading screen
+
+    def loading_screen(self):
+            
+        root = CTk()
+        root.geometry('750x420')
+        root.title('Mychat - Loading screen')
+
+        loading_label = CTkLabel(root, text ='Loading..', font = CTkFont(size = 48, weight = 'bold'))
+        loading_label.pack(pady = 30)
+
+        loading_bar = CTkProgressBar(root, orientation = 'horizontal')
+        loading_bar.pack(pady = 30)
+
+        loading_bar.start()
+
+        root.mainloop()
+
+        return root
 
 #my contacts screen
 
@@ -292,7 +312,11 @@ class create_client():
         if selected_contact:
 
             date_time = datetime.now()
-            now = date_time.strftime("%d/%m/%Y %H:%M:%S")
+            now = date_time.strftime("%Y/%m/%d %H:%M:%S")
+
+            replaced_now = now.split()
+            replaced_now_date = replaced_now[0] + '_'
+            replaced_now_time = replaced_now[1][:-3]
 
             selected_contact = users_list.get(ANCHOR)
 
@@ -303,7 +327,7 @@ class create_client():
 
             self.insert_contacts_list(self.all_users_list)
 
-            contacts_table.insert(parent = '', index = 'end', iid = self.my_contacts_list_and_dates.index(f'{selected_contact} {now}'), text = selected_contact, values = now)
+            contacts_table.insert(parent = '', index = 'end', iid = self.my_contacts_list_and_dates.index(f'{selected_contact} {now}'), text = selected_contact, values = (replaced_now_date + replaced_now_time))
 
             message_box(f'{selected_contact} successfuly added!', 'info')
 
@@ -585,7 +609,7 @@ def loged_in(client_socket):
 
                 info = bytes(f'{username}`{password}', 'utf8')
                 encrypted_info = rsa.encrypt(info, public_partner)
-                
+
                 client_socket.send('/logged_in '.encode('utf-8') + encrypted_info)
 
                 check_nickname_id = client_socket.recv(1024).decode()
