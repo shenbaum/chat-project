@@ -8,8 +8,8 @@ import rsa
 
 host_name = socket.gethostname()
 HOST = socket.gethostbyname(host_name)
-print(HOST)
-HOST='0.0.0.0'
+
+HOST = '0.0.0.0'
 PORT = 8821
 
 # keys
@@ -39,7 +39,6 @@ class create_socket():
         self.clients = []
 
     def broadcast(self, data, sender):
-        print(data)
 
         for client in self.clients:
             if client != sender:
@@ -256,9 +255,7 @@ class create_socket():
                 counter = 0
 
                 query = f"SELECT user_id FROM users WHERE nick_name = '{contact_nickname}'"
-                print(query)
                 users_data_base_cursor.execute(query)
-                print('after' + query)
 
                 contact_id = [int(record[0]) for record in users_data_base_cursor.fetchall()]
                 contact_id = contact_id[0]
@@ -339,7 +336,6 @@ class create_socket():
                             last_five_messages += '/separation/'
 
                 last_five_messages = last_five_messages[:-12]
-                print(last_five_messages)
                 client.send(f'/recieve_last_five_messages {last_five_messages}'.encode('utf-8'))
 
 server_socket = create_socket()
