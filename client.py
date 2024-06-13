@@ -119,8 +119,6 @@ class create_client():
                         nickname_time = f'{new_contact} {now}'
                         self.my_contacts_list_and_dates.append(nickname_time)
 
-                        replaced_time = (str(now).split()[0]) + ' ' + (str(now).split()[1])
-
                         contacts_table.insert(parent = '', index = 'end',
                                 iid = self.my_contacts_list_and_dates.index(nickname_time),
                                 text = new_contact, values = (replaced_now_date + replaced_now_time))
